@@ -316,7 +316,7 @@ namespace source
                             player.SavePlayerData();
                         else
                         {
-                            Console.WriteLine("인벤토리에 있는 아이템을 입력해주세요.");
+                            Console.WriteLine("인벤토리에 있는 아이템의 번호를 입력해주세요.");
                             Console.ReadKey(true);
                         }
                     }
@@ -377,7 +377,7 @@ namespace source
                     Console.WriteLine();
                     Console.WriteLine("구매할 아이템의 번호를 입력해주세요.");
                     int select = InputInt();
-                    if (0 < select && select <= 10)
+                    if (0 < select && select <= shopList.Count)
                     {
                         if (!player.inventory.HasSameItem(shopList[select - 1]))
                         {
@@ -400,6 +400,11 @@ namespace source
                     }
                     else if (select == 0)
                         step = 0;
+                    else
+                    {
+                        Console.WriteLine("상점에 있는 아이템의 번호를 입력해주세요.");
+                        Console.ReadKey(true);
+                    }
                     break;
                 case 2:
                     Console.Clear();
@@ -420,6 +425,11 @@ namespace source
                             Console.WriteLine("{0}을/를 팔았습니다.", name);
                             player.SavePlayerData();
                             Console.ReadKey();
+                        }
+                        else
+                        {
+                            Console.WriteLine("인벤토리에 있는 아이템의 번호를 입력해주세요.");
+                            Console.ReadKey(true);
                         }
                     }
                     else if (select == 0)

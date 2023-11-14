@@ -59,15 +59,24 @@ namespace source
 
                 ICryptoTransform dec = aes.CreateDecryptor(aes.Key, aes.IV);
 
-                using (MemoryStream ms = new MemoryStream(cipher))
+                try
                 {
-                    using (CryptoStream cs = new CryptoStream(ms, dec, CryptoStreamMode.Read))
+                    using (MemoryStream ms = new MemoryStream(cipher))
                     {
-                        using (StreamReader sr = new StreamReader(cs))
+                        using (CryptoStream cs = new CryptoStream(ms, dec, CryptoStreamMode.Read))
                         {
-                            decryted = sr.ReadToEnd();
+                            using (StreamReader sr = new StreamReader(cs))
+                            {
+                                decryted = sr.ReadToEnd();
+                            }
                         }
                     }
+                }
+                catch (CryptographicException ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.ReadKey(true);
+                    return null;
                 }
             }
 

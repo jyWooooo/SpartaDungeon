@@ -18,6 +18,7 @@ namespace source
         public Inventory(Character _parent)
         {
             parent = _parent;
+            MaxPad = 4;
         }
 
         public void InsertItem(Item item)

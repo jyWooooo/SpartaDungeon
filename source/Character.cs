@@ -186,8 +186,8 @@ namespace source
                 { "HP", HP },
                 { "Gold", Gold },
                 { "Exp", Exp },
-                { "equipWeapon", equipWeapon.ID },
-                { "equipArmor", equipArmor.ID },
+                { "equipWeapon", equipWeapon?.ID },
+                { "equipArmor", equipArmor?.ID },
                 { "Inventory", inventory.ToJArray() }
             };
             return res;
@@ -196,24 +196,69 @@ namespace source
         public void SavePlayerData()
         {
             var jsonStr = JsonConvert.SerializeObject(ToJObject());
+            //File.WriteAllText(@"PlayerData.json", jsonStr.ToString());
             File.WriteAllText(@"PlayerData.json", AESManager.Encrypt(jsonStr.ToString()));
         }
 
         public static Character LoadPlayerData()
         {
-            var josnStr = AESManager.Decrypt(File.ReadAllText(@"PlayerData.json"));
-            var jobject = JsonConvert.DeserializeObject<JObject>(josnStr);
-            Character res = new Character((string)jobject["Name"], (string)jobject["Job"], (int)jobject["Level"], (int)jobject["Atk"],
-                                          (int)jobject["Def"], (int)jobject["HP"], (int)jobject["Gold"],  (int)jobject["Exp"]);
-            foreach (var e in jobject["Inventory"])
+            Character res = null;
+            try
             {
-                Item n = Shop.instance[(int)e].DeepCopy();
-                res.inventory.InsertItem(n);
-                if ((int)jobject["equipWeapon"] == (int)e)
-                    res.equipWeapon = n as Weapon;
-                if ((int)jobject["equipArmor"] == (int)e)
-                    res.equipArmor = n as Armor;
+                //var josnStr = File.ReadAllText(@"PlayerData.json");
+                var josnStr = AESManager.Decrypt(File.ReadAllText(@"PlayerData.json"));
+                var jobject = JsonConvert.DeserializeObject<JObject>(josnStr);
+                res = new Character((string)jobject["Name"], (string)jobject["Job"], (int)jobject["Level"], (int)jobject["Atk"],
+                                              (int)jobject["Def"], (int)jobject["HP"], (int)jobject["Gold"], (int)jobject["Exp"]);
+                foreach (var e in jobject["Inventory"])
+                {
+                    if (Shop.instance.ContainsKey((int)e))
+                    {
+                        Item n = Shop.instance[(int)e].DeepCopy();
+                        res.inventory.InsertItem(n);
+                        if (jobject["equipArmor"].HasValues)
+                            if ((int)jobject["equipWeapon"] == (int)e)
+                                res.equipWeapon = n as Weapon;
+                        if (jobject["equipArmor"].HasValues)
+                            if ((int)jobject["equipArmor"] == (int)e)
+                                res.equipArmor = n as Armor;
+                    }
+                }
             }
+            catch (FileNotFoundException ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.ReadKey(true);
+            }
+            catch (NullReferenceException ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.ReadKey(true);
+            }
+            catch (JsonReaderException ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.ReadKey(true);
+            }
+            catch (FormatException ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.ReadKey(true);
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.ReadKey(true);
+            }
+            if (res == null)
+                res = MakeBasicCharacterFile();
+            return res;
+        }
+
+        public static Character MakeBasicCharacterFile()
+        {
+            Character res = new Character("", "전사", 1, 10, 5, 100, 1500, 0);
+            res.SavePlayerData();
             return res;
         }
     }
