@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace source
 {
-    [Serializable]
     public class Character
     {
         int _atk;
@@ -115,11 +114,15 @@ namespace source
                 equipArmor = null;
         }
 
-        public void EquipItem(int idx)
+        public bool EquipItem(int idx)
         {
-            var item = inventory.GetItem(idx - 1);
+            var item = inventory.GetItem(idx);
             if (item != null)
+            {
                 EquipItem(item);
+                return true;
+            }
+            return false;
         }
 
         public string SaleItem(int idx)

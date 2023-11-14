@@ -13,16 +13,16 @@ namespace source
     {
         public static Character player;
 
-        public enum Scene
+        public enum SceneType
         {
             TitleScene,
             LobbyScene,
             MyInfo,
             Inventory,
             Shop,
-            Dungeon,
+            Dungeon
         }
-        static Scene currentScene = Scene.TitleScene;
+        static SceneType currentScene = SceneType.TitleScene;
 
         public struct DungeonInfo
         {
@@ -61,22 +61,22 @@ namespace source
             {
                 switch (currentScene)
                 {
-                    case Scene.TitleScene:
+                    case SceneType.TitleScene:
                         DrawTitleScene();
                         break;
-                    case Scene.LobbyScene:
+                    case SceneType.LobbyScene:
                         DrawLobbyScene();
                         break;
-                    case Scene.MyInfo:
+                    case SceneType.MyInfo:
                         DrawMyInfo();
                         break;
-                    case Scene.Inventory:
+                    case SceneType.Inventory:
                         DrawInventory(ref step);
                         break;
-                    case Scene.Shop:
+                    case SceneType.Shop:
                         DrawShop(ref step);
                         break;
-                    case Scene.Dungeon:
+                    case SceneType.Dungeon:
                         DrawDungeon(ref step);
                         break;
                 }
@@ -98,30 +98,78 @@ namespace source
                 d.SetMaxPad();
         }
 
-        static ConsoleKey InputKey()
+        /// <summary>
+        /// 매개변수로 지정한 범위 내의 사용자 입력을 받습니다. 범위 외의 입력은 예외처리됩니다.
+        /// </summary>
+        /// <param name="binaryBoolArray"> 비트 연산을 수행하여 범위 내의 입력인지 판단합니다.
+        /// <br> 가장 오른쪽부터 0번 키, 가장 왼쪽이 9번 키입니다.</br>
+        /// </param>
+        static int InputKey(int binaryBoolArray = 0b0000000001)
         {
-            var res = Console.ReadKey(true).Key;
-            if (res == ConsoleKey.NumPad0)
-                res = ConsoleKey.D0;
-            if (res == ConsoleKey.NumPad1)
-                res = ConsoleKey.D1;
-            if (res == ConsoleKey.NumPad2)
-                res = ConsoleKey.D2;
-            if (res == ConsoleKey.NumPad3)
-                res = ConsoleKey.D3;
-            if (res == ConsoleKey.NumPad4)
-                res = ConsoleKey.D4;
-            if (res == ConsoleKey.NumPad5)
-                res = ConsoleKey.D5;
-            if (res == ConsoleKey.NumPad6)
-                res = ConsoleKey.D6;
-            if (res == ConsoleKey.NumPad7)
-                res = ConsoleKey.D7;
-            if (res == ConsoleKey.NumPad8)
-                res = ConsoleKey.D8;
-            if (res == ConsoleKey.NumPad9)
-                res = ConsoleKey.D9;
-            return res;
+            do
+            {
+                int? res;
+                var key = Console.ReadKey(true).Key;
+                if (ConsoleKey.D0 <= key && key <= ConsoleKey.D9)
+                    res = key - ConsoleKey.D0;
+                else if (ConsoleKey.NumPad0 <= key && key <= ConsoleKey.NumPad9)
+                    res = key - ConsoleKey.NumPad0;
+                else res = null;
+
+                if (res.HasValue)
+                {
+                    int checker = 1 << res.Value;
+                    if ((checker & binaryBoolArray) != 0)
+                        return res.Value;
+                }
+                int cursorLeft = Console.CursorLeft;
+                int cursorTop = Console.CursorTop;
+                InputExceptionMessage(cursorLeft, cursorTop, "유효하지 않은 입력입니다.");
+            } while (true);
+        }
+
+        /// <summary>
+        /// 매개변수로 지정한 범위 내의 사용자 입력을 받습니다.
+        /// <br> 전투시스템 전용 키 입력입니다. 범위 외의 입력은 무시됩니다. </br>
+        /// </summary>
+        static ConsoleKey InputKey(ConsoleKey[] validKeys)
+        {
+            do
+            {
+                var key = Console.ReadKey(true).Key;
+                for (int i = 0; i < validKeys.Length; i++)
+                {
+                    if (key == validKeys[i])
+                        return key;
+                }
+            } while (true);
+        }
+
+        static int InputInt()
+        {
+            do
+            {
+                var input = Console.ReadLine();
+                if (int.TryParse(input, out int res))
+                    return res;
+                else
+                {
+                    int cursorLeft = Console.CursorLeft;
+                    int cursorTop = Console.CursorTop - 1;
+                    InputExceptionMessage(cursorLeft, cursorTop, "유효하지 않은 입력입니다.", 2);
+                }
+            } while (true);
+        }
+
+        static void InputExceptionMessage(int cursorLeft, int cursorTop, string message, int clearLineCount = 1)
+        {
+
+            Console.WriteLine(message);
+            Console.ReadKey(true);
+            Console.SetCursorPosition(cursorLeft, cursorTop);
+            for (int i = 0; i < clearLineCount; i++)
+                Console.WriteLine("                         ");
+            Console.SetCursorPosition(cursorLeft, cursorTop);
         }
 
         static void DrawTitleScene()
@@ -139,7 +187,7 @@ namespace source
             Console.WriteLine("=                                                                                    =");
             Console.WriteLine("======================================================================================");
             Console.WriteLine("                                아무 키나 눌러서 시작                                 ");
-            InputKey();
+            Console.ReadKey(true);
             if (player.Name == "")
             {
                 string str;
@@ -154,12 +202,13 @@ namespace source
                 player.ChangeName(str);
                 player.SavePlayerData();
             }
-            currentScene = Scene.LobbyScene;
+            currentScene = SceneType.LobbyScene;
         }
 
         static void DrawLobbyScene()
         {
             Console.Clear();
+            Console.WriteLine("[마  을]");
             Console.WriteLine("마을에 도착했습니다...");
             Console.WriteLine();
             Console.WriteLine("1. 여관 (내 상태)");
@@ -168,21 +217,21 @@ namespace source
             Console.WriteLine("4. 던전");
             Console.WriteLine();
             Console.WriteLine("원하시는 행동을 입력해주세요.");
-            var input = InputKey();
-            if (input == ConsoleKey.D1)
-                currentScene = Scene.MyInfo;
-            else if (input == ConsoleKey.D2)
-                currentScene = Scene.Inventory;
-            else if (input == ConsoleKey.D3)
-                currentScene = Scene.Shop;
-            else if (input == ConsoleKey.D4)
-                currentScene = Scene.Dungeon;
+            var input = InputKey(0b11110);
+            if (input == 1)
+                currentScene = SceneType.MyInfo;
+            else if (input == 2)
+                currentScene = SceneType.Inventory;
+            else if (input == 3)
+                currentScene = SceneType.Shop;
+            else if (input == 4)
+                currentScene = SceneType.Dungeon;
         }
 
         static void DrawMyInfo()
         {
             Console.Clear();
-            Console.WriteLine("여관");
+            Console.WriteLine("[여  관]");
             Console.WriteLine("내 상태를 보거나 휴식을 취합니다.");
             Console.WriteLine();
             Console.WriteLine($"{player.Name} ({player.Job})");
@@ -205,8 +254,8 @@ namespace source
             Console.WriteLine("0. 나가기");
             Console.WriteLine();
             Console.WriteLine("원하시는 행동을 입력해주세요.");
-            var input = InputKey();
-            if (input == ConsoleKey.D1)
+            var input = InputKey(0b11);
+            if (input == 1)
             {
                 if (player.HP >= 100)
                     Console.WriteLine("이미 최대 체력입니다.");
@@ -218,14 +267,14 @@ namespace source
                 }
                 Console.ReadKey(true);
             }
-            else if (input == ConsoleKey.D0)
-                currentScene = Scene.LobbyScene;
+            else if (input == 0)
+                currentScene = SceneType.LobbyScene;
         }
 
         static void DrawInventory(ref int step)
         {
             Console.Clear();
-            Console.WriteLine("인벤토리");
+            Console.WriteLine("[인벤토리]");
             Console.WriteLine();
             if (player.inventory.viewType)
                 Console.WriteLine(" {0} | {1} | {2, -8} | {3}", "번호", "이름" + "".PadLeft(player.inventory.MaxPad - 4), "정보", "설명");
@@ -245,14 +294,14 @@ namespace source
                     Console.WriteLine("0. 나가기");
                     Console.WriteLine();
                     Console.WriteLine("원하시는 행동을 입력해주세요.");
-                    var input = InputKey();
-                    if (input == ConsoleKey.D0)
-                        currentScene = Scene.LobbyScene;
-                    else if (input == ConsoleKey.D1)
+                    var input = InputKey(0b1111);
+                    if (input == 0)
+                        currentScene = SceneType.LobbyScene;
+                    else if (input == 1)
                         step = 1;
-                    else if (input == ConsoleKey.D2)
+                    else if (input == 2)
                         step = 2;
-                    else if (input == ConsoleKey.D3)
+                    else if (input == 3)
                         player.inventory.viewType = !player.inventory.viewType;
                     break;
                 case 1:
@@ -260,14 +309,18 @@ namespace source
                     Console.WriteLine("0. 나가기");
                     Console.WriteLine();
                     Console.WriteLine("장착할 아이템의 번호를 입력해주세요.");
-                    var input2 = Console.ReadLine();
-                    if (int.TryParse(input2, out int res))
+                    int select = InputInt();
+                    if (0 < select && select <= 10)
                     {
-                        if (0 < res && res <= 10)
-                            player.EquipItem(res);
-                        player.SavePlayerData();
+                        if (player.EquipItem(select - 1))
+                            player.SavePlayerData();
+                        else
+                        {
+                            Console.WriteLine("인벤토리에 있는 아이템을 입력해주세요.");
+                            Console.ReadKey(true);
+                        }
                     }
-                    if (res == 0)
+                    else if (select == 0)
                         step = 0;
                     break;
                 case 2:
@@ -281,33 +334,24 @@ namespace source
                     Console.WriteLine("0. 나가기");
                     Console.WriteLine();
                     Console.WriteLine("원하시는 행동을 입력해주세요.");
-                    input = InputKey();
-                    if (input == ConsoleKey.D1)
-                        player.inventory.OrderBy((OrderType)0);
-                    else if (input == ConsoleKey.D2)
-                        player.inventory.OrderBy((OrderType)1);
-                    else if (input == ConsoleKey.D3)
-                        player.inventory.OrderBy((OrderType)2);
-                    else if (input == ConsoleKey.D4)
-                        player.inventory.OrderBy((OrderType)3);
-                    else if (input == ConsoleKey.D5)
-                        player.inventory.OrderBy((OrderType)4);
-                    else if (input == ConsoleKey.D6)
-                        player.inventory.OrderBy((OrderType)5);
-                    else if (input == ConsoleKey.D7)
-                        player.inventory.OrderBy((OrderType)6);
-                    else if (input == ConsoleKey.D0)
+                    input = InputKey(0b11111111);
+                    if (input == 0)
                         step = 0;
-                    player.SavePlayerData();
+                    else
+                    {
+                        player.inventory.OrderBy((OrderType)(input - 1));
+                        player.SavePlayerData();
+                    }
                     break;
             }
-
         }
 
         static void DrawShop(ref int step)
         {
             Console.Clear();
-            Console.WriteLine("상  점");
+            Console.WriteLine("[상  점]");
+            Console.WriteLine("아이템을 구매하거나 판매합니다.");
+            Console.WriteLine();
             Console.WriteLine("돈 : {0:#,##0}", player.Gold);
             Console.WriteLine();
             Console.WriteLine(" {0} | {1} | {2, -8} | {3, 8}", "번호", "이름" + "".PadLeft(Shop.MaxPad - 4), "정보", "가격");
@@ -321,46 +365,41 @@ namespace source
                     Console.WriteLine("0. 나가기");
                     Console.WriteLine();
                     Console.WriteLine("원하시는 행동을 입력해주세요.");
-                    var input = InputKey();
-                    if (input == ConsoleKey.D0)
-                        currentScene = Scene.LobbyScene;
-                    else if (input == ConsoleKey.D1)
-                        step = 1;
-                    else if (input == ConsoleKey.D2)
-                        step = 2;
+                    var input = InputKey(0b111);
+                    if (input == 0)
+                        currentScene = SceneType.LobbyScene;
+                    else
+                        step = input;
                     break;
                 case 1:
                     Console.WriteLine("아이템의 번호로 원하는 아이템을 구매합니다.");
                     Console.WriteLine("0. 나가기");
                     Console.WriteLine();
                     Console.WriteLine("구매할 아이템의 번호를 입력해주세요.");
-                    var input2 = Console.ReadLine();
-                    if (int.TryParse(input2, out int res))
+                    int select = InputInt();
+                    if (0 < select && select <= 10)
                     {
-                        if (0 < res && res <= 10)
+                        if (!player.inventory.HasSameItem(shopList[select - 1]))
                         {
-                            if (!player.inventory.HasSameItem(shopList[res - 1]))
+                            var item = shopList[select - 1].DeepCopy();
+                            if (item.Price <= player.Gold)
                             {
-                                var item = shopList[res - 1].DeepCopy();
-                                if (item.Price <= player.Gold)
-                                {
-                                    player.BuyItem(item);
-                                    Console.WriteLine("{0}을/를 샀습니다.", item.Name);
-                                    player.SavePlayerData();
-                                }
-                                else
-                                    Console.WriteLine("돈이 모자랍니다.");
-                                Console.ReadKey();
+                                player.BuyItem(item);
+                                Console.WriteLine("{0}을/를 샀습니다.", item.Name);
+                                player.SavePlayerData();
                             }
                             else
-                            {
-                                Console.WriteLine("이미 있는 아이템입니다.");
-                                Console.ReadKey();
-                            }
+                                Console.WriteLine("돈이 모자랍니다.");
+                            Console.ReadKey();
                         }
-                        else if (res == 0)
-                            step = res;
+                        else
+                        {
+                            Console.WriteLine("이미 있는 아이템입니다.");
+                            Console.ReadKey();
+                        }
                     }
+                    else if (select == 0)
+                        step = 0;
                     break;
                 case 2:
                     Console.Clear();
@@ -372,22 +411,19 @@ namespace source
                     Console.WriteLine("0. 나가기");
                     Console.WriteLine();
                     Console.WriteLine("판매할 아이템의 번호를 입력해주세요.");
-                    input2 = Console.ReadLine();
-                    if (int.TryParse(input2, out res))
+                    select = InputInt();
+                    if (0 < select && select <= 10)
                     {
-                        if (0 < res && res <= 10)
+                        string name = player.SaleItem(select - 1);
+                        if (name != null)
                         {
-                            string name = player.SaleItem(res - 1);
-                            if (name != null)
-                            {
-                                Console.WriteLine("{0}을/를 팔았습니다.", name);
-                                player.SavePlayerData();
-                                Console.ReadKey();
-                            }
+                            Console.WriteLine("{0}을/를 팔았습니다.", name);
+                            player.SavePlayerData();
+                            Console.ReadKey();
                         }
-                        else if (res == 0)
-                            step = res;
                     }
+                    else if (select == 0)
+                        step = 0;
                     break;
             }
         }
@@ -395,7 +431,7 @@ namespace source
         static void DrawDungeon(ref int step)
         {
             Console.Clear();
-            Console.WriteLine("던전");
+            Console.WriteLine("[던  전]");
             Console.WriteLine("던전을 탐험합니다. 몬스터와 싸우고 보상을 얻습니다.");
             Console.WriteLine();
             Console.WriteLine("내 정보");
@@ -418,10 +454,10 @@ namespace source
                     Console.WriteLine("0. 나가기");
                     Console.WriteLine();
                     Console.WriteLine("원하시는 행동을 입력해주세요.");
-                    var input = InputKey();
-                    if (input == ConsoleKey.D0)
-                        currentScene = Scene.LobbyScene;
-                    else if (input == ConsoleKey.D1)
+                    var input = InputKey(0b11);
+                    if (input == 0)
+                        currentScene = SceneType.LobbyScene;
+                    else 
                         step = 1;
                     break;
                 case 1:
@@ -429,97 +465,102 @@ namespace source
                     Console.WriteLine("0. 나가기");
                     Console.WriteLine();
                     Console.WriteLine("입장할 던전의 번호를 입력해주세요.");
-                    var input2 = Console.ReadLine();
-                    if (int.TryParse(input2, out int res))
+                    int select = InputInt();
+                    if (0 < select && select <= dungeons.Length)
                     {
-                        if (0 < res && res <= dungeons.Length)
-                        {
-                            var currentDungeon = dungeons[res - 1];
-                            var rand = new Random();
-                            var monsterHP = currentDungeon.HP;
-                            int monsterIdx = rand.Next(0, currentDungeon.Monsters.Length);
-                            var monsterName = currentDungeon.Monsters[monsterIdx];
-                            monsterHP = (monsterHP * (100 + monsterIdx * 25)) / 100;
-                            Console.Clear();
-                            Console.WriteLine("{0}에 입장했습니다.", currentDungeon.Name);
-                            Console.WriteLine();
-                            Console.WriteLine("{0}을/를 만났습니다!", monsterName);
-                            Console.Write("몬스터의 남은 체력 : ");
-                            int cursorLeft = Console.CursorLeft;
-                            int cursorTop = Console.CursorTop;
-                            Console.WriteLine("{0,-6:#,##0}", monsterHP);
-                            int monsterCurrentHP = monsterHP;
-                            List<ConsoleKey> battleKeys = new List<ConsoleKey>();
-                            while (true)
-                            {
-                                Console.SetCursorPosition(cursorLeft, cursorTop);
-                                Console.WriteLine("{0,6:#,##0}", monsterCurrentHP > 0 ? monsterCurrentHP : 0);
-                                DrawHPGuage(monsterCurrentHP, monsterHP, ConsoleColor.DarkRed);
-                                Console.WriteLine();
-                                Console.WriteLine("나의 남은 체력 : {0,6:#,##0}", player.HP);
-                                DrawHPGuage(player.HP, 100, ConsoleColor.DarkGreen);
-                                RandomBattleKeys(rand, battleKeys);
-                                if (monsterCurrentHP <= 0 || player.HP <= 0)
-                                    break;
-                                Console.WriteLine("입력하여 공격!");
-                                Console.WriteLine("▼");
-                                for (int i = 0; i < battleKeys.Count; i++)
-                                    Console.Write(" {0}", battleKeys[i].ToString());
-                                Console.WriteLine("\n▲");
-                                while (true)
-                                {
-                                    input = InputKey();
-                                    if (input == battleKeys.First())
-                                    {
-                                        monsterCurrentHP -= player.Atk;
-                                        battleKeys.RemoveAt(0);
-                                        break;
-                                    }
-                                    else if (input == ConsoleKey.A || input == ConsoleKey.S || input == ConsoleKey.D)
-                                    {
-                                        player.HitDamage(currentDungeon.NeedDef * 2);
-                                        player.SavePlayerData();
-                                        break;
-                                    }
-                                }
-                            }
-                            Console.SetCursorPosition(0, 12);
-                            if (monsterCurrentHP <= 0)
-                            {
-                                player.Heal(0, -currentDungeon.ClearGold);
-                                Console.WriteLine("{0}을/를 물리쳤습니다!", monsterName);
-                                Console.WriteLine();
-                                Console.WriteLine("[탐험 결과]");
-                                Console.WriteLine("{0} G를 얻었습니다.", currentDungeon.ClearGold);
-                                if (player.ExpUp())
-                                    Console.WriteLine("레벨이 {0}에서 {1}로 증가했습니다!", player.Level - 1, player.Level);
-                            }
-                            else
-                            {
-                                player.Heal(10, 0);
-                                Console.WriteLine("{0}에게 당했습니다!", monsterName);
-                                Console.WriteLine();
-                                Console.WriteLine("[탐험 결과]");
-                                Console.WriteLine("당신은 목숨만을 겨우 부지한 체 마을로 돌아왔습니다...");
-                            }
-                            player.SavePlayerData();
-                            Console.WriteLine();
-                            Console.WriteLine("0. 나가기");
-                            Console.WriteLine();
-                            Console.WriteLine("원하시는 행동을 입력해주세요.");
-                            do
-                            {
-                                input = InputKey();
-                            }
-                            while (input != ConsoleKey.D0);
-                            step = 0;
-                        }
-                        else if (res == 0)
-                            step = res;
+                        DrawBattleScene(dungeons[select - 1]);
+                        step = 0;
+                    }
+                    else if (select == 0)
+                        step = 0;
+                    else
+                    {
+                        Console.WriteLine("던전의 번호를 정확하게 입력해주세요.");
+                        Console.ReadKey(true);
                     }
                     break;
 
             }
+        }
+
+        static void DrawBattleScene(DungeonInfo currentDungeon)
+        {
+            var rand = new Random();
+            var monsterHP = currentDungeon.HP;
+            int monsterIdx = rand.Next(0, currentDungeon.Monsters.Length);
+            var monsterName = currentDungeon.Monsters[monsterIdx];
+            monsterHP = (monsterHP * (100 + monsterIdx * 25)) / 100;
+            Console.Clear();
+            Console.WriteLine("{0}에 입장했습니다.", currentDungeon.Name);
+            Console.WriteLine();
+            Console.WriteLine("{0}을/를 만났습니다!", monsterName);
+            Console.Write("몬스터의 남은 체력 : ");
+            int cursorLeft = Console.CursorLeft;
+            int cursorTop = Console.CursorTop;
+            Console.WriteLine("{0,-6:#,##0}", monsterHP);
+            int monsterCurrentHP = monsterHP;
+            List<ConsoleKey> battleKeys = new List<ConsoleKey>();
+            while (true)
+            {
+                Console.SetCursorPosition(cursorLeft, cursorTop);
+                Console.WriteLine("{0,6:#,##0}", monsterCurrentHP > 0 ? monsterCurrentHP : 0);
+                DrawHPGuage(monsterCurrentHP, monsterHP, ConsoleColor.DarkRed);
+                Console.WriteLine();
+                Console.WriteLine("나의 남은 체력 : {0,6:#,##0}", player.HP);
+                DrawHPGuage(player.HP, 100, ConsoleColor.DarkGreen);
+                var validBattleKeys = new ConsoleKey[] { ConsoleKey.A, ConsoleKey.S, ConsoleKey.D };
+                RandomBattleKeys(rand, battleKeys, validBattleKeys);
+                if (monsterCurrentHP <= 0 || player.HP <= 0)
+                    break;
+                Console.WriteLine("입력하여 공격!");
+                Console.WriteLine("▼");
+                for (int i = 0; i < battleKeys.Count; i++)
+                    Console.Write(" {0}", battleKeys[i].ToString());
+                Console.WriteLine("\n▲");
+                while (true)
+                {
+                    var battleInput = InputKey(validBattleKeys);
+                    if (battleInput == battleKeys.First())
+                    {
+                        monsterCurrentHP -= player.Atk;
+                        battleKeys.RemoveAt(0);
+                        break;
+                    }
+                    else
+                    {
+                        player.HitDamage(currentDungeon.NeedDef * 2);
+                        player.SavePlayerData();
+                        break;
+                    }
+                }
+            }
+            Console.SetCursorPosition(0, 12);
+            if (monsterCurrentHP <= 0)
+            {
+                player.Heal(0, -currentDungeon.ClearGold);
+                Console.WriteLine("{0}을/를 물리쳤습니다!", monsterName);
+                Console.WriteLine();
+                Console.WriteLine("[탐험 결과]");
+                Console.WriteLine("{0} G를 얻었습니다.", currentDungeon.ClearGold);
+                if (player.ExpUp())
+                    Console.WriteLine("레벨이 {0}에서 {1}로 증가했습니다!", player.Level - 1, player.Level);
+            }
+            else
+            {
+                player.Heal(10, 0);
+                Console.WriteLine("{0}에게 당했습니다!", monsterName);
+                Console.WriteLine();
+                Console.WriteLine("[탐험 결과]");
+                Console.WriteLine("당신은 목숨만을 겨우 부지한 체 마을로 돌아왔습니다...");
+            }
+            player.SavePlayerData();
+            Console.WriteLine();
+            Console.WriteLine("0. 나가기");
+            Console.WriteLine();
+            Console.WriteLine("원하시는 행동을 입력해주세요.");
+            var input = InputKey();
+            if (input == 0)
+                currentScene = SceneType.Dungeon;
         }
 
         static void DrawHPGuage(int currentHP, int maxHP, ConsoleColor color)
@@ -528,7 +569,7 @@ namespace source
             int extraCnt = 50;
             Console.Write("[");
             Console.BackgroundColor = color;
-            for (float f = rate; f >= 0; f -= 0.02f)
+            for (float f = rate; f > 0; f -= 0.02f)
             {
                 Console.Write(" ");
                 extraCnt--;
@@ -539,17 +580,12 @@ namespace source
             Console.WriteLine("]");
         }
 
-        static void RandomBattleKeys(Random rand, List<ConsoleKey> ret)
+        static void RandomBattleKeys(Random rand, List<ConsoleKey> ret, ConsoleKey[] validKeys)
         {
             while (ret.Count < 10)
             {
-                int r = rand.Next(0, 3);
-                if (r == 0)
-                    ret.Add(ConsoleKey.A);
-                else if (r == 1)
-                    ret.Add(ConsoleKey.S);
-                else
-                    ret.Add(ConsoleKey.D);
+                int r = rand.Next(0, validKeys.Length);
+                ret.Add(validKeys[r]);
             }
         }
     }

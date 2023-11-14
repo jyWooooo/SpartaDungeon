@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 
 namespace source
 {
-    [Serializable]
     public abstract class Item
     {
         public int ID { get; protected set; }
@@ -64,7 +63,6 @@ namespace source
         }
     }
 
-    [Serializable]
     public class Weapon : Item 
     {
         public Weapon(int id, string name, int price, int atk, string desc)
@@ -97,7 +95,7 @@ namespace source
         public override void OnUsed(Character owner)
         {
             Console.WriteLine("{0}을/를 장착했습니다.", Name);
-            Console.ReadKey();
+            Console.ReadKey(true);
         }
 
         public override string OnShowStatus()
@@ -111,7 +109,6 @@ namespace source
         }
     }
 
-    [Serializable]
     public class Armor : Item
     {
         public Armor(int id, string name, int price, int def, string desc)
@@ -144,7 +141,7 @@ namespace source
         public override void OnUsed(Character owner)
         {
             Console.WriteLine("{0}을/를 장착했습니다.", Name);
-            Console.ReadKey();
+            Console.ReadKey(true);
         }
 
         public override string OnShowStatus()
