@@ -225,27 +225,7 @@ namespace source
                     }
                 }
             }
-            catch (FileNotFoundException ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.ReadKey(true);
-            }
-            catch (NullReferenceException ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.ReadKey(true);
-            }
-            catch (JsonReaderException ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.ReadKey(true);
-            }
-            catch (FormatException ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.ReadKey(true);
-            }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.ReadKey(true);

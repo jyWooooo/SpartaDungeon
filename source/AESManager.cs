@@ -72,7 +72,7 @@ namespace source
                         }
                     }
                 }
-                catch (CryptographicException ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                     Console.ReadKey(true);
